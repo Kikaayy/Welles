@@ -1,9 +1,12 @@
-Date
-Heure
-Météo
-TODO (autre fichier)
+
+Spotify (Mets des chansons similaires/Qui chante/C'est quoi le nom de la chanson actuelle/ Lance une playlist)
+
+Météo (Faire qu'il comprenne tout seul la ville)
+
+Hum to search
+
+TODO list (autre fichier)
 Calendrier
-Spotify
 Classement L1/L2
 Patch Note lol / LP
 Quel est ton nom ? / Comment t'appelles tu ?

@@ -3,12 +3,17 @@ import datetime
 import requests
 from googletrans import Translator
 import spotipy
+from googlesearch import search
+import requests
+from bs4 import BeautifulSoup
 from spotipy.oauth2 import SpotifyOAuth
+from credentials import CLIENT_SECRET, CLIENT_ID
 
-def authenticate_spotify():
-    scope = "user-library-read user-modify-playback-state user-read-playback-state"
-    sp = spotipy.Spotify(auth_manager=SpotifyOAuth(scope=scope))
-    return sp
+sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
+                                                        client_secret=CLIENT_SECRET,
+                                                        redirect_uri="https://google.com",
+                                                        scope='user-modify-playback-state user-read-currently-playing'))
+
 
 def play_track(sp, track_name):
     results = sp.search(q=track_name, type="track", limit=1)
@@ -18,6 +23,27 @@ def play_track(sp, track_name):
         print(f"Lecture de la piste : {track_name}")
     else:
         print(f"Piste non trouvée : {track_name}")
+
+def google_search(query):
+    try:
+        print("Recherche Google en cours...")
+        for j in search(query, num=1, stop=1, pause=2, safe="off", user_agent="Mozilla/5.0"):
+            page_url = j
+            response = requests.get(page_url)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            paragraphs = soup.find_all('p')
+
+            # Retourner les deux premières phrases
+            if len(paragraphs) >= 3:
+                result = paragraphs[0].text + ' ' + paragraphs[1].text
+            else:
+                result = ' '.join([p.text for p in paragraphs])
+
+            return result
+    except Exception as e:
+        print(f"Erreur lors de la recherche Google : {e}")
+        return "Erreur lors de la recherche Google."
+
 
 def pause_playback(sp):
     sp.pause_playback()
@@ -34,10 +60,6 @@ def next_track(sp):
 def previous_track(sp):
     sp.previous_track()
     print("Piste précédente")
-
-def assistant_vocal():
-    sp = authenticate_spotify()
-    recognizer = sr.Recognizer()
 
 def get_date():
     now = datetime.datetime.now()
@@ -81,6 +103,9 @@ def assistant_vocal():
 
             if "bonjour" in command:
                 print("Bonjour! Comment puis-je vous aider?")
+            elif "quitter" in command:
+                print("Au revoir!")
+                break
             elif "date" in command:
                 x = datetime.datetime.now().weekday()
                 if x==0:
@@ -105,7 +130,7 @@ def assistant_vocal():
                 ville = input("Ville : ")
                 print(get_weather(ville))
             elif "ton nom" in command:
-                print("Je m'appelle Welles tout comme le personnage de Cyberpunk 2077 Jackie Welles.")
+                print("Je m'appelle Welles tout comme Orson Welles le célèbre écrivain où le personnage de Cyberpunk 2077 Jackie Welles.")
             elif "lance" in command:
                 track_name = input("Quelle chanson voulez-vous écouter? : ")
                 play_track(sp, track_name)
@@ -119,9 +144,13 @@ def assistant_vocal():
                 next_track(sp)
             elif "précédente" in command:
                 previous_track(sp)
-            elif "quitter" in command:
-                print("Au revoir!")
-                break
+            elif any(word in command for word in ["quoi", "qui", "où", "quel", "quelle", "comment", "que"]):
+                query = command.capitalize()  # Utiliser le mot clé pour commencer la requête
+                result = google_search(query)
+                print(f"Résultat de la recherche Google : {result}")
+
+
+
             else:
                 print("Désolé, je ne comprends pas cette commande.")
 
