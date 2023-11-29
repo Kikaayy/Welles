@@ -13,7 +13,8 @@ Welles is a virtual assistant developed in Python.
 
 1. Clone the repository
 2. Install the required dependencies with `pip install -r requirements.txt`
-3. Run `python welles.py` to start the assistant
+3. Create a credentials.py with your Spotify client ID and Secret ID `CLIENT_ID = "YOUR_ID" CLIENT_SECRET = "YOUR_SECRET"`
+4. Run `python welles.py` to start the assistant
 
 ## Usage
 

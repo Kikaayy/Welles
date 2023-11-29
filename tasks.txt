@@ -1,7 +1,9 @@
 
-Spotify (Mets des chansons similaires/Qui chante/C'est quoi le nom de la chanson actuelle/ Lance une playlist)
+Spotify (Mets des chansons similaires/Qui chante/C'est quoi le nom de la chanson actuelle/ Lance une playlist/Faire qu'il comprenne tout seul la musique a lancer)
 
 Météo (Faire qu'il comprenne tout seul la ville)
+
+Autodetect son nom
 
 Hum to search
 
