@@ -7,11 +7,15 @@ Autodetect son nom
 
 Hum to search
 
-TODO list (autre fichier)
+Pile ou Face 
+Nombre aléatoire 
+Choisis entre tout
+
+Blind Test ??
+
 Calendrier
 Classement L1/L2
 Patch Note lol / LP
-Quel est ton nom ? / Comment t'appelles tu ?
 Suivi de Colis
 
 Question GOOGLE

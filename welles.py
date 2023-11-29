@@ -6,6 +6,7 @@ import spotipy
 from googlesearch import search
 import requests
 from bs4 import BeautifulSoup
+import os
 from spotipy.oauth2 import SpotifyOAuth
 from credentials import CLIENT_SECRET, CLIENT_ID
 
@@ -13,6 +14,28 @@ sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=CLIENT_ID,
                                                         client_secret=CLIENT_SECRET,
                                                         redirect_uri="https://google.com",
                                                         scope='user-modify-playback-state user-read-currently-playing'))
+TODO_FILE = "todolist.txt"
+
+def add_task_to_todo_list(task):
+    with open(TODO_FILE, "a") as file:
+        file.write(f"- {task}\n")
+    print(f"Tâche ajoutée à la liste : {task}")
+
+def view_todo_list():
+    with open(TODO_FILE, "r") as file:
+        todolist_content = file.read()
+        print(todolist_content)
+
+def delete_task_from_todo_list(task):
+    with open(TODO_FILE, "r") as file:
+        lines = file.readlines()
+
+    with open(TODO_FILE, "w") as file:
+        for line in lines:
+            if line.strip() != f"- {task}":
+                file.write(line)
+    
+    print(f"Tâche supprimée de la liste : {task}")
 
 
 def play_track(sp, track_name):
@@ -101,12 +124,12 @@ def assistant_vocal():
             command = recognizer.recognize_google(audio, language="fr-FR")
             print("Vous avez dit: {}".format(command))
 
-            if "bonjour" in command:
-                print("Bonjour! Comment puis-je vous aider?")
-            elif "quitter" in command:
+            if any(word in command for word in ["stop", "quitter", "au revoir"]):
                 print("Au revoir!")
                 break
-            elif "date" in command:
+            elif "bonjour" in command:
+                print("Bonjour! Comment puis-je vous aider?")
+            elif any(word in command for word in ["date", "jour"]):
                 x = datetime.datetime.now().weekday()
                 if x==0:
                     x="Lundi"
@@ -125,14 +148,25 @@ def assistant_vocal():
                 print("Nous sommes le", x, "{}".format(datetime.datetime.now().strftime('%d-%m-%y')))
             elif "heure" in command:
                 print("Il est actuellement {}".format(get_time()))
+            elif "supprime la tâche" in command:
+                task = input("Quelle tâche voulez-vous supprimer de la liste? : ")
+                delete_task_from_todo_list(task)
+            elif "supprime tout" in command:
+                with open(TODO_FILE, "w") as file:
+                    file.write("")
+                print("Toutes les tâches ont été supprimées de la liste.")
+            elif "tâche" in command:
+                task = input("Quelle tâche voulez-vous ajouter à la liste? : ")
+                add_task_to_todo_list(task)
+            elif any(word in command for word in ["list", "liste"]):
+                print("Voici votre To Do list")
+                view_todo_list()
             elif "météo" in command:
                 print("Veuillez préciser la ville.")
                 ville = input("Ville : ")
                 print(get_weather(ville))
             elif "ton nom" in command:
                 print("Je m'appelle Welles tout comme Orson Welles le célèbre écrivain où le personnage de Cyberpunk 2077 Jackie Welles.")
-            elif "lance" in command:
-                track_name = input("Quelle chanson voulez-vous écouter? : ")
                 play_track(sp, track_name)
             elif "pause" in command:
                 pause_playback(sp)
@@ -144,6 +178,8 @@ def assistant_vocal():
                 next_track(sp)
             elif "précédente" in command:
                 previous_track(sp)
+            elif any(word in command for word in ["lance", "mets"]):
+                track_name = input("Quelle chanson voulez-vous écouter? : ")
             elif any(word in command for word in ["quoi", "qui", "où", "quel", "quelle", "comment", "que"]):
                 query = command.capitalize()  # Utiliser le mot clé pour commencer la requête
                 result = google_search(query)
