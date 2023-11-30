@@ -13,7 +13,9 @@ import json
 from spotipy.oauth2 import SpotifyOAuth
 from fuzzywuzzy import fuzz
 import webbrowser
-from credentials import CLIENT_SECRET, CLIENT_ID, WEATHER_API, FOOTBALL
+from credentials import CLIENT_SECRET, CLIENT_ID, WEATHER_API, FOOTBALL, LOL
+from riotwatcher import LolWatcher, ApiError
+
 
 #TODO LIST
 TODO_FILE = "todolist.txt"
@@ -51,7 +53,6 @@ def google_search(query):
             soup = BeautifulSoup(response.text, 'html.parser')
             paragraphs = soup.find_all('p')
 
-            # Retourner les deux premières phrases
             if len(paragraphs) >= 3:
                 result = paragraphs[0].text + ' ' + paragraphs[1].text
             else:
@@ -88,7 +89,6 @@ def play_track(sp, track_name):
         print(f"Piste non trouvée : {track_name}")
 
 def titremusique():
-        # Get the current user's currently playing track
         current_track = sp.current_playback()
         
         if current_track is not None and 'item' in current_track and 'name' in current_track['item']:
@@ -96,10 +96,8 @@ def titremusique():
             artist_name = current_track['item']['artists'][0]['name'] if 'artists' in current_track['item'] and current_track['item']['artists'] else 'Unknown Artist'
             album_name = current_track['item']['album']['name'] if 'album' in current_track['item'] else 'Unknown Album'
             
-            # Get featurings (if available)
             featuring_artists = ', '.join([artist['name'] for artist in current_track['item']['artists'][1:]]) if len(current_track['item']['artists']) > 1 else None
 
-            # Build the output string
             output_string = f"La chanson actuelle est {track_name} par {artist_name} sur l'album {album_name}"
 
             if featuring_artists:
@@ -126,7 +124,6 @@ def previous_track(sp):
     print("Piste précédente")
 
 def blind_test(playlist_name,goal):
-    # Search for the playlist by name
     goal = int(goal)
     playlists = sp.search(q=playlist_name, type='playlist')
 
@@ -136,17 +133,14 @@ def blind_test(playlist_name,goal):
 
     playlist_id = playlists['playlists']['items'][0]['id']
     
-    # Shuffle the playlist
     sp.shuffle(True)
 
-    # Start playback
     try:
         sp.start_playback(context_uri=f'spotify:playlist:{playlist_id}')
     except spotipy.SpotifyException as e:
         print(f"Error starting playback: {e}")
         return
 
-    # Initialize variables
     wrong_count = 0
     right_count = 0
     
@@ -158,18 +152,15 @@ def blind_test(playlist_name,goal):
 
         while wrong_count < 3:
             if current_track is not None and 'item' in current_track and 'name' in current_track['item']:
-                # Clean the song name
                 clean_current_track_name = clean_track_name(current_track['item']['name'])
 
                 guessed_song = input("Réponse: ")
 
-                # Clean the guessed song name
                 clean_guessed_song = clean_track_name(guessed_song.lower())
 
-                # Use fuzzy string matching to check similarity
                 similarity_ratio = fuzz.ratio(clean_guessed_song, clean_current_track_name.lower())
 
-                if similarity_ratio >= 80:  # Adjust the threshold as needed
+                if similarity_ratio >= 80:  
                     print("Correct!\n")
                     right_count += 1
                     break
@@ -181,13 +172,11 @@ def blind_test(playlist_name,goal):
                     print("Perdu ! La bonne réponse était:", clean_current_track_name,
                           "par", current_track['item']['artists'][0]['name'])
                     wrong_count = 0
-                    # Skip to the next track
                     break
 
     print("Fini !")
 
 def clean_track_name(song_name):
-    # Remove anything after " (" in the song name
     return song_name.split(" (")[0]
 
 def radioassocie():
@@ -198,7 +187,6 @@ def radioassocie():
 
 
 def playlis_play(playlist_name):
-    # Search for the playlist by name
     playlists = sp.search(q=playlist_name, type='playlist')
 
     if len(playlists['playlists']['items']) == 0:
@@ -207,10 +195,7 @@ def playlis_play(playlist_name):
 
     playlist_id = playlists['playlists']['items'][0]['id']
     
-    # Shuffle the playlist
     sp.shuffle(True)
-
-    # Start playback
     try:
         sp.start_playback(context_uri=f'spotify:playlist:{playlist_id}')
     except spotipy.SpotifyException as e:
@@ -227,6 +212,7 @@ def get_time():
     now = datetime.datetime.now()
     return now.strftime("%H:%M:%S")
 
+#FOOTBALL
 
 def classement(comp):
     url = f"https://api.football-data.org/v4/competitions/{comp}/standings"
@@ -235,7 +221,7 @@ def classement(comp):
     response = requests.get(url, headers=headers)
 
     if response.status_code == 200:
-        retour = parse_standings(response.json())  # Utilize .json() to extract the JSON content
+        retour = parse_standings(response.json())  
         i = 0
         while i < len(retour):
             print(retour[i],"\t",retour[i+1],"\t","\t","\t",retour[i+2])
@@ -262,7 +248,6 @@ def parse_standings(json_data):
 def football(team_name):
     api_key = FOOTBALL
     base_url = 'https://api.football-data.org/v4/'
-    # Obtenir l'ID de votre équipe
     teams_url = f'{base_url}teams'
     teams_response = requests.get(teams_url, headers={'X-Auth-Token': api_key})
     teams_data = teams_response.json()
@@ -276,7 +261,6 @@ def football(team_name):
     if team_id is None:
         print(f"L'équipe {team_name} n'a pas été trouvée.")
     else:
-        # Obtenir le classement de l'équipe
         standings_url = f'{base_url}competitions/FL1/standings'
         standings_response = requests.get(standings_url, headers={'X-Auth-Token': api_key})
         standings_data = standings_response.json()
@@ -286,12 +270,10 @@ def football(team_name):
                 position = standing['position']
                 print(f"Classement de {team_name}: {position}")
 
-        # Obtenir le calendrier de l'équipe
         fixtures_url = f'{base_url}teams/{team_id}/matches'
         fixtures_response = requests.get(fixtures_url, headers={'X-Auth-Token': api_key})
         fixtures_data = fixtures_response.json()
 
-        # Trouver le prochain match
         for fixture in fixtures_data['matches']:
             if fixture['status'] == 'SCHEDULED':
                 date = fixture['utcDate']
@@ -299,28 +281,63 @@ def football(team_name):
                 print(f"Prochain match de {team_name} le {date} contre {opponent}")
                 break
 
+#League of Legends
+
+lol_watcher = LolWatcher(LOL)
+
+def get_summoner_id(summoner_name):
+    me = lol_watcher.summoner.by_name("euw1", summoner_name)
+
+    my_ranked_stats = lol_watcher.league.by_summoner("euw1", me['id'])
+    tier = my_ranked_stats[0]['tier']
+    rank = my_ranked_stats[0]['rank']
+    return f'Rank : {tier} {rank}'
+
+
+def get_current_game(summoner_name):
+    summoner = lol_watcher.summoner.by_name("euw1", summoner_name)
+    summoner_id = summoner['id']
+    try:
+        headers = {'X-Riot-Token': LOL}
+        response = requests.get(f"https://euw1.api.riotgames.com/lol/spectator/v4/active-games/by-summoner/{summoner_id}", headers=headers)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        if response.status_code == 400 and "Exception decrypting" in response.text:
+            print("Erreur de déchiffrement. Quitter le programme.")
+            quit()
+        else:
+            print(f"Le joueur n'est pas dans une partie")
+            return
+    current_game = lol_watcher.spectator.by_summoner("euw1", summoner_id)
+    print("Le joueur est actuellement dans une partie.")
+    print("Type de partie:", current_game["gameType"])
+    print("Durée de la partie:", current_game["gameLength"]//60, "minutes")
+    team_id = 0
+    for nom in current_game["participants"]:
+        if nom["summonerName"] == summoner_name:
+            team_id = nom["teamId"]
+    target_team_id = []
+    for nom in current_game["participants"]:
+        if nom["teamId"] == team_id and nom["summonerName"]!=summoner_name:
+            target_team_id.append(nom["summonerName"])
+    print(f"Les joueurs avec le même TeamID que {summoner_name} sont : {target_team_id}")
+
 #WEATHER
 
 def get_weather(city):
     api_key = WEATHER_API 
     url = f"https://api.weatherapi.com/v1/current.json?key={api_key}&q={city}&lang=fr"
 
-    # Faites la requête HTTP
     response = requests.get(url)
 
-    # Assurez-vous que la requête s'est bien déroulée (statut 200)
     if response.status_code == 200:
-        # Charger le contenu JSON de la réponse
         data = response.json()
 
-        # Extraire la température et la condition météorologique
         temperature_celsius = data['current']['temp_c']
         condition = data['current']['condition']['text']
 
-        # Retourner les résultats
         return f'Température : {temperature_celsius}°C, Condition météorologique : {condition}'
     else:
-        # En cas d'erreur de requête, imprimer le statut de la réponse
         print(f"Erreur de requête HTTP. Statut : {response.status_code}")
         return None
 
@@ -328,24 +345,18 @@ def previsions(city):
     api_key = WEATHER_API 
     url = f"https://api.weatherapi.com/v1/forecast.json?key={api_key}&q={city}&lang=fr&days=3"
 
-    # Faites la requête HTTP
     response = requests.get(url)
 
-    # Assurez-vous que la requête s'est bien déroulée (statut 200)
     if response.status_code == 200:
-        # Charger le contenu JSON de la réponse
         data = response.json()
 
-        # Extraire la température et la condition météorologique
         temperature_celsius = data["forecast"]["forecastday"][0]["day"]['avgtemp_c']
         max_temperature = data["forecast"]["forecastday"][0]["day"]['maxtemp_c']
         pluiepourcent = data["forecast"]["forecastday"][0]["day"]['daily_chance_of_rain']
         condition = data["forecast"]["forecastday"][0]["day"]["condition"]["text"]
 
-        # Retourner les résultats
         return f'Température moyenne : {temperature_celsius}°C, avec un pic à {max_temperature}°C Condition météorologique : {condition} avec {pluiepourcent}% de chance de pluie'
     else:
-        # En cas d'erreur de requête, imprimer le statut de la réponse
         print(f"Erreur de requête HTTP. Statut : {response.status_code}")
         return None
     
@@ -413,6 +424,18 @@ def assistant_vocal():
                 print("Veuillez préciser la compétition.")
                 comp = input("Compétition : ")
                 print(classement(comp))
+            elif any(word in command for word in ["legend","légende","Legends"]):
+                print("Veuillez préciser le nom")
+                name = input("nom : ")
+                if name == "moi":
+                    name = "MarkíngYourAss"
+                get_current_game(name)    
+            elif any(word in command for word in ["LP","rank","rang"]):
+                print("Veuillez préciser le nom")
+                name = input("nom : ")
+                if name == "moi":
+                    name = "MarkíngYourAss"
+                print(get_summoner_id(name))        
             elif any(word in command for word in ["prévision","prévisions"]):
                 print("Veuillez préciser la ville.")
                 ville = input("Ville : ")
@@ -454,7 +477,7 @@ def assistant_vocal():
             elif any(word in command for word in ["lance", "mets"]):
                 track_name = input("Quelle chanson voulez-vous écouter? : ")
             elif any(word in command for word in ["quoi", "qui", "où", "quel", "quelle", "comment", "que"]):
-                query = command.capitalize()  # Utiliser le mot clé pour commencer la requête
+                query = command.capitalize() 
                 result = google_search(query)
                 print(f"Résultat de la recherche Google : {result}")
 

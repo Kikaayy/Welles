@@ -1,16 +1,14 @@
 Autodetect son nom
 
-Hum to search
-
 Calendrier
 
-Classement sports + Prochain match
+Prochain match / GP 
 
-Patch Note lol / LP
-
-Suivi de Colis
+Suivi de Colis en continu (avec mémoire)
 
 Question GOOGLE
 
+Integrer LLAMA 7B
+
 AUTODETECT todo
-Task todolist - Météo - Spotipy titre - Spotipy Playlist - Blind Test
+Task todolist - Météo - Spotipy titre - Spotipy Playlist - Blind Test - Classement sport - LOL API
