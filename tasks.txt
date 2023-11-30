@@ -1,15 +1,10 @@
-
-Spotify (Radio liée / Qui chante / Quel est le titre / Lance une playlist)
-
 Autodetect son nom
 
 Hum to search
 
-Blind Test ??
-
 Calendrier
 
-Classement L1/L2
+Classement sports + Prochain match
 
 Patch Note lol / LP
 
@@ -18,4 +13,4 @@ Suivi de Colis
 Question GOOGLE
 
 AUTODETECT todo
-Task todolist - Météo - Spotipy titre - Spotipy Playlist - Blind Test)
+Task todolist - Météo - Spotipy titre - Spotipy Playlist - Blind Test

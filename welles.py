@@ -9,10 +9,11 @@ from bs4 import BeautifulSoup
 import os
 import time
 import random
+import json
 from spotipy.oauth2 import SpotifyOAuth
-import re
 from fuzzywuzzy import fuzz
-from credentials import CLIENT_SECRET, CLIENT_ID
+import webbrowser
+from credentials import CLIENT_SECRET, CLIENT_ID, WEATHER_API, FOOTBALL
 
 #TODO LIST
 TODO_FILE = "todolist.txt"
@@ -134,9 +135,6 @@ def blind_test(playlist_name,goal):
         return
 
     playlist_id = playlists['playlists']['items'][0]['id']
-
-    # Get the track list from the specified playlist
-    playlist_tracks = sp.playlist_tracks(playlist_id)
     
     # Shuffle the playlist
     sp.shuffle(True)
@@ -192,6 +190,33 @@ def clean_track_name(song_name):
     # Remove anything after " (" in the song name
     return song_name.split(" (")[0]
 
+def radioassocie():
+    current_playback = sp.current_playback()
+    GOOOOO = "Radio "+ current_playback['item']['name'] + " " + current_playback['item']['artists'][0]['name']
+    print(GOOOOO)
+    playlis_play(GOOOOO)
+
+
+def playlis_play(playlist_name):
+    # Search for the playlist by name
+    playlists = sp.search(q=playlist_name, type='playlist')
+
+    if len(playlists['playlists']['items']) == 0:
+        print(f"No playlist found with the name '{playlist_name}'. Exiting.")
+        return
+
+    playlist_id = playlists['playlists']['items'][0]['id']
+    
+    # Shuffle the playlist
+    sp.shuffle(True)
+
+    # Start playback
+    try:
+        sp.start_playback(context_uri=f'spotify:playlist:{playlist_id}')
+    except spotipy.SpotifyException as e:
+        print(f"Error starting playback: {e}")
+        return
+
 #DATE AND TIME
 
 def get_date():
@@ -202,26 +227,127 @@ def get_time():
     now = datetime.datetime.now()
     return now.strftime("%H:%M:%S")
 
+
+def classement(comp):
+    url = f"https://api.football-data.org/v4/competitions/{comp}/standings"
+    headers = {'X-Auth-Token': FOOTBALL}
+
+    response = requests.get(url, headers=headers)
+
+    if response.status_code == 200:
+        retour = parse_standings(response.json())  # Utilize .json() to extract the JSON content
+        i = 0
+        while i < len(retour):
+            print(retour[i],"\t",retour[i+1],"\t","\t","\t",retour[i+2])
+            i = i + 3
+    else:
+        print(f"Erreur lors de la requête : {response.status_code}")
+        print(response.text)
+        return None
+
+def parse_standings(json_data):
+    teams_info = []
+
+    for team_data in json_data['standings'][0]['table']:
+        position = team_data['position']
+        team_name = team_data['team']['name']
+        points = team_data['points']
+
+        teams_info.append(position)
+        teams_info.append(team_name)
+        teams_info.append(points)
+
+    return teams_info
+    
+def football(team_name):
+    api_key = FOOTBALL
+    base_url = 'https://api.football-data.org/v4/'
+    # Obtenir l'ID de votre équipe
+    teams_url = f'{base_url}teams'
+    teams_response = requests.get(teams_url, headers={'X-Auth-Token': api_key})
+    teams_data = teams_response.json()
+
+    team_id = None
+    for team in teams_data['teams']:
+        if team['name'] == team_name:
+            team_id = team['id']
+            break
+
+    if team_id is None:
+        print(f"L'équipe {team_name} n'a pas été trouvée.")
+    else:
+        # Obtenir le classement de l'équipe
+        standings_url = f'{base_url}competitions/FL1/standings'
+        standings_response = requests.get(standings_url, headers={'X-Auth-Token': api_key})
+        standings_data = standings_response.json()
+
+        for standing in standings_data['standings'][0]['table']:
+            if standing['team']['id'] == team_id:
+                position = standing['position']
+                print(f"Classement de {team_name}: {position}")
+
+        # Obtenir le calendrier de l'équipe
+        fixtures_url = f'{base_url}teams/{team_id}/matches'
+        fixtures_response = requests.get(fixtures_url, headers={'X-Auth-Token': api_key})
+        fixtures_data = fixtures_response.json()
+
+        # Trouver le prochain match
+        for fixture in fixtures_data['matches']:
+            if fixture['status'] == 'SCHEDULED':
+                date = fixture['utcDate']
+                opponent = fixture['homeTeam']['name'] if fixture['awayTeam']['id'] == team_id else fixture['awayTeam']['name']
+                print(f"Prochain match de {team_name} le {date} contre {opponent}")
+                break
+
 #WEATHER
 
-def get_weather(city="Paris"):
-    api_key = "372a91e6dc52dda810f63d3392deefc7"  # Remplacez cela par votre clé API Weatherstack
-    base_url = f"http://api.weatherstack.com/current?access_key={api_key}&query={city}"
-    
-    response = requests.get(base_url)
-    data = response.json()
+def get_weather(city):
+    api_key = WEATHER_API 
+    url = f"https://api.weatherapi.com/v1/current.json?key={api_key}&q={city}&lang=fr"
 
-    if "error" in data:
-        return "Ville non trouvée"
+    # Faites la requête HTTP
+    response = requests.get(url)
+
+    # Assurez-vous que la requête s'est bien déroulée (statut 200)
+    if response.status_code == 200:
+        # Charger le contenu JSON de la réponse
+        data = response.json()
+
+        # Extraire la température et la condition météorologique
+        temperature_celsius = data['current']['temp_c']
+        condition = data['current']['condition']['text']
+
+        # Retourner les résultats
+        return f'Température : {temperature_celsius}°C, Condition météorologique : {condition}'
     else:
-        temperature = data["current"]["temperature"]
-        description = data["current"]["weather_descriptions"][0]
+        # En cas d'erreur de requête, imprimer le statut de la réponse
+        print(f"Erreur de requête HTTP. Statut : {response.status_code}")
+        return None
 
-        translator = Translator()
-        translated_description = translator.translate(description, src="en", dest="fr").text
-        print(translated_description)
+def previsions(city):
+    api_key = WEATHER_API 
+    url = f"https://api.weatherapi.com/v1/forecast.json?key={api_key}&q={city}&lang=fr&days=3"
 
-        return f"La température à {city} est actuellement {temperature}°C. Conditions météorologiques : {translated_description}"
+    # Faites la requête HTTP
+    response = requests.get(url)
+
+    # Assurez-vous que la requête s'est bien déroulée (statut 200)
+    if response.status_code == 200:
+        # Charger le contenu JSON de la réponse
+        data = response.json()
+
+        # Extraire la température et la condition météorologique
+        temperature_celsius = data["forecast"]["forecastday"][0]["day"]['avgtemp_c']
+        max_temperature = data["forecast"]["forecastday"][0]["day"]['maxtemp_c']
+        pluiepourcent = data["forecast"]["forecastday"][0]["day"]['daily_chance_of_rain']
+        condition = data["forecast"]["forecastday"][0]["day"]["condition"]["text"]
+
+        # Retourner les résultats
+        return f'Température moyenne : {temperature_celsius}°C, avec un pic à {max_temperature}°C Condition météorologique : {condition} avec {pluiepourcent}% de chance de pluie'
+    else:
+        # En cas d'erreur de requête, imprimer le statut de la réponse
+        print(f"Erreur de requête HTTP. Statut : {response.status_code}")
+        return None
     
 
 #MAIN
@@ -245,21 +371,8 @@ def assistant_vocal():
             elif "bonjour" in command:
                 print("Bonjour! Comment puis-je vous aider?")
             elif any(word in command for word in ["date", "jour"]):
-                x = datetime.datetime.now().weekday()
-                if x==0:
-                    x="Lundi"
-                elif x==1:
-                    x="Mardi"
-                elif x==2:
-                    x="Mercredi"
-                elif x==3:
-                    x="Jeudi"
-                elif x==4:
-                    x="Vendredi"
-                elif x==5:
-                    x="Samedi"
-                elif x==6:
-                    x="Dimanche"
+                translator=Translator()
+                x = translator.translate(datetime.datetime.now().strftime('%A'), dest='fr').text
                 print("Nous sommes le", x, "{}".format(datetime.datetime.now().strftime('%d-%m-%y')))
             elif "pile ou face" in command:
                 print(pileouface())
@@ -289,9 +402,21 @@ def assistant_vocal():
             elif "tâche" in command:
                 task = input("Quelle tâche voulez-vous ajouter à la liste? : ")
                 add_task_to_todo_list(task)
-            elif any(word in command for word in ["list", "liste"]):
+            elif any(word in command for word in [" list", " liste"]):
                 print("Voici votre To Do list")
                 view_todo_list()
+            elif "football" in command:
+                print("Veuillez préciser l'équipe.")
+                team_name = input("Équipe : ")
+                football(team_name)
+            elif "classement" in command:
+                print("Veuillez préciser la compétition.")
+                comp = input("Compétition : ")
+                print(classement(comp))
+            elif any(word in command for word in ["prévision","prévisions"]):
+                print("Veuillez préciser la ville.")
+                ville = input("Ville : ")
+                print(previsions(ville))
             elif "météo" in command:
                 print("Veuillez préciser la ville.")
                 ville = input("Ville : ")
@@ -304,6 +429,16 @@ def assistant_vocal():
                 playlist_name = input("Blind Test sur quoi ? ")
                 goal = input("En combien de points ?")
                 blind_test(playlist_name, goal)
+            elif "playlist" in command:
+                print("Lancement de la playlist...")
+                playlist_name = input("Quelle playlist voulez-vous lancer ? ")
+                playlis_play(playlist_name)
+            elif any(word in command for word in ["radio", "similaire"]):
+                print("Lancement de titre associés")
+                radioassocie()
+            elif "volume" in command:
+                volume = int(input("Combien ? (en pourcentages) : "))
+                sp.volume(volume)
             elif "pause" in command:
                 pause_playback(sp)
             elif "remet" in command:
