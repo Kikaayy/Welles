@@ -309,9 +309,7 @@ def get_current_game(summoner_name):
             print(f"Le joueur n'est pas dans une partie")
             return
     current_game = lol_watcher.spectator.by_summoner("euw1", summoner_id)
-    print("Le joueur est actuellement dans une partie.")
-    print("Type de partie:", current_game["gameType"])
-    print("Durée de la partie:", current_game["gameLength"]//60, "minutes")
+    print(summoner_name," est actuellement dans",current_game["gameType"],"depuis",(current_game["gameLength"]//60)+4, "minutes")
     team_id = 0
     for nom in current_game["participants"]:
         if nom["summonerName"] == summoner_name:
@@ -320,7 +318,7 @@ def get_current_game(summoner_name):
     for nom in current_game["participants"]:
         if nom["teamId"] == team_id and nom["summonerName"]!=summoner_name:
             target_team_id.append(nom["summonerName"])
-    print(f"Les joueurs avec le même TeamID que {summoner_name} sont : {target_team_id}")
+    print(f"{summoner_name} joue avec {target_team_id}")
 
 #WEATHER
 
