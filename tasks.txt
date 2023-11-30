@@ -1,21 +1,21 @@
 
-Spotify (Mets des chansons similaires/Qui chante/C'est quoi le nom de la chanson actuelle/ Lance une playlist/Faire qu'il comprenne tout seul la musique a lancer)
-
-Météo (Faire qu'il comprenne tout seul la ville)
+Spotify (Radio liée / Qui chante / Quel est le titre / Lance une playlist)
 
 Autodetect son nom
 
 Hum to search
 
-Pile ou Face 
-Nombre aléatoire 
-Choisis entre tout
-
 Blind Test ??
 
 Calendrier
+
 Classement L1/L2
+
 Patch Note lol / LP
+
 Suivi de Colis
 
 Question GOOGLE
+
+AUTODETECT todo
+Task todolist - Météo - Spotipy titre - Spotipy Playlist - Blind Test)
