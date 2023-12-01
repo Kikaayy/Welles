@@ -174,7 +174,7 @@ def blind_test(playlist_name,goal):
 
                 if wrong_count == 3:
                     print("Perdu ! La bonne réponse était:", clean_current_track_name,
-                          "par", current_track['item']['artists'][0]['name'])
+                        "par", current_track['item']['artists'][0]['name'])
                     wrong_count = 0
                     break
 
@@ -290,8 +290,18 @@ def football(team_name):
 lol_watcher = LolWatcher(LOL)
 
 def get_summoner_id(summoner_name):
+    try:
+        headers = {'X-Riot-Token': LOL}
+        response = requests.get(f"https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/{summoner_name}", headers=headers)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        if response.status_code == 400 and "Exception decrypting" in response.text:
+            print("Erreur de déchiffrement. Quitter le programme.")
+            quit()
+        else:
+            print(f"Le joueur n'est pas classé")
+            return
     me = lol_watcher.summoner.by_name("euw1", summoner_name)
-
     my_ranked_stats = lol_watcher.league.by_summoner("euw1", me['id'])
     tier = my_ranked_stats[0]['tier']
     rank = my_ranked_stats[0]['rank']
@@ -340,8 +350,7 @@ def get_weather(city):
 
         return f'Température : {temperature_celsius}°C, Condition météorologique : {condition}'
     else:
-        print(f"Erreur de requête HTTP. Statut : {response.status_code}")
-        return None
+        return(f"Ville non trouvée. Statut : {response.status_code}")
 
 def previsions(city):
     api_key = WEATHER_API 
