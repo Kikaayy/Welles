@@ -1,7 +1,6 @@
 .cache
 .google-cookie
 credentials.py
-tasks.txt
 __pycache__
 todolist.txt
 test.py

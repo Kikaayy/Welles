@@ -115,6 +115,10 @@ def resume_playback(sp):
     sp.start_playback()
     print("Reprise de la lecture")
 
+def get_volume(sp):
+    volume = sp.current_playback()
+    return volume['device']['volume_percent']
+
 def next_track(sp):
     sp.next_track()
     print("Piste suivante")
@@ -363,7 +367,6 @@ def previsions(city):
 
 def assistant_vocal():
     recognizer = sr.Recognizer()
-
     while True:
         try:
             with sr.Microphone() as source:
@@ -460,6 +463,12 @@ def assistant_vocal():
             elif "volume" in command:
                 volume = int(input("Combien ? (en pourcentages) : "))
                 sp.volume(volume)
+            elif "plus fort" in command:
+                volume = get_volume(sp)
+                sp.volume(volume + 20)
+            elif "moins fort" in command:
+                volume = get_volume(sp)
+                sp.volume(volume - 20)
             elif "pause" in command:
                 pause_playback(sp)
             elif "remet" in command:
